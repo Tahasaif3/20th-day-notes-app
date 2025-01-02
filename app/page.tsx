@@ -1,101 +1,155 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Plus, Trash2, Edit2 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+interface Note {
+  id: string
+  title: string
+  content: string
+  color: string
 }
+
+const colors = ['#FFA07A', '#98FB98', '#87CEFA', '#DDA0DD', '#F0E68C', '#FFB6C1'];
+
+export default function NotesApp() {
+  const [notes, setNotes] = useState<Note[]>([])
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  useEffect(() => {
+    const savedNotes = localStorage.getItem('notes')
+    if (savedNotes) {
+      setNotes(JSON.parse(savedNotes))
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('notes', JSON.stringify(notes))
+  }, [notes])
+
+  const addNote = () => {
+    if (title.trim() === '' || content.trim() === '') return
+    const newNote: Note = {
+      id: Date.now().toString(),
+      title,
+      content,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    }
+    setNotes([newNote, ...notes])
+    setTitle('')
+    setContent('')
+    setIsDialogOpen(false)
+  }
+
+  const deleteNote = (id: string) => {
+    setNotes(notes.filter(note => note.id !== id))
+  }
+
+  const editNote = (id: string) => {
+    const noteToEdit = notes.find(note => note.id === id)
+    if (noteToEdit) {
+      setTitle(noteToEdit.title)
+      setContent(noteToEdit.content)
+      setEditingId(id)
+      setIsDialogOpen(true)
+    }
+  }
+
+  const updateNote = () => {
+    if (editingId) {
+      setNotes(notes.map(note => 
+        note.id === editingId ? { ...note, title, content } : note
+      ))
+      setTitle('')
+      setContent('')
+      setEditingId(null)
+      setIsDialogOpen(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4 sm:p-6 md:p-8">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-4xl font-bold text-white text-center mb-8">Notes App</h1>
+        
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="mb-6 w-full sm:w-auto">
+              <Plus className="mr-2 h-4 w-4" /> Add New Note
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>{editingId ? 'Edit Note' : 'Add New Note'}</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <Input
+                type="text"
+                placeholder="Note Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+              <Textarea
+                placeholder="Note Content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={4}
+              />
+              <Button onClick={editingId ? updateNote : addNote} className="w-full">
+                {editingId ? 'Update Note' : 'Add Note'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <AnimatePresence>
+            {notes.map((note) => (
+              <motion.div
+                key={note.id}
+                layout
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="h-full" style={{ backgroundColor: note.color }}>
+                  <CardContent className="p-4 flex flex-col h-full">
+                    <h2 className="text-xl font-semibold mb-2 flex-grow">{note.title}</h2>
+                    <p className="mb-4 flex-grow">{note.content}</p>
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        onClick={() => editNote(note.id)}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => deleteNote(note.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  )
+}
+
